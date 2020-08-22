@@ -1,60 +1,132 @@
 package com.example.alarmz.stopwatch
 
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.Chronometer
+import androidx.recyclerview.widget.RecyclerView
 import com.example.alarmz.R
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [StopWatchFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class StopWatchFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
+    companion object {
+
+        fun newInstance() = StopWatchFragment()
+
+        @JvmStatic
+        lateinit var displayTimeText: Chronometer
+
+        @JvmStatic
+        var timerRunning = false
     }
+
+
+    var pauseTime = 0L
+    lateinit var startTimerButton: Button
+    lateinit var resetTimerButton: Button
+    lateinit var lapButton: Button
+    var laps = ArrayList<Lap>()
+    lateinit var lapRecyclerView: RecyclerView
+    lateinit var lapAdapter: LapAdapter
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_stop_watch, container, false)
+        var root = inflater.inflate(R.layout.fragment_stop_watch, container, false)
+
+        startTimerButton = root.findViewById(R.id.startTimer)
+        resetTimerButton = root.findViewById(R.id.resetTImer)
+        lapButton = root.findViewById(R.id.lap)
+        displayTimeText = root.findViewById(R.id.timeDisplay)
+
+        lapRecyclerView = root.findViewById(R.id.lapRecycler)
+
+        startTimerButton.setOnClickListener {
+            if (timerRunning) {
+                startTimerButton.text = "Resume"
+            } else {
+                startTimerButton.text = "Pause"
+            }
+            StartTimer()
+        }
+
+        resetTimerButton.setOnClickListener {
+            startTimerButton.text = "Start"
+            ResetTimer()
+        }
+
+        lapButton.setOnClickListener {
+            if (timerRunning) {
+                addLap()
+            }
+        }
+
+        return root
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment StopWatchFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            StopWatchFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+    private fun addLap() {
+        var num: Int = 0;
+        var elapsed = System.currentTimeMillis() - MyCanvas.startTime
+        var difference: Long = 0
+        if (laps.size == 0) {
+            num = 1
+            difference = elapsed
+        } else {
+            num = laps[laps.size - 1].lapNo + 1
+            difference = elapsed - laps[laps.size - 1].elapsedTime
+        }
+        laps.add(Lap(lapNo = num, elapsedTime = elapsed, timeDifference = difference))
+        populateRecycler()
     }
+
+    private fun populateRecycler() {
+        lapAdapter = LapAdapter(laps)
+        lapRecyclerView.adapter = lapAdapter
+    }
+
+    private fun ResetTimer() {
+        timerRunning = false
+        MyCanvas.start = false
+        MyCanvas.secondX = 0F
+        MyCanvas.secondY = -160F
+        MyCanvas.minuteX = 0F
+        MyCanvas.minuteY = -30F
+        MyCanvas.startTime = 0
+        pauseTime = 0
+        laps.clear()
+        populateRecycler()
+        displayTimeText.base = SystemClock.elapsedRealtime()
+        displayTimeText.stop()
+    }
+
+    private fun StartTimer() {
+        if (timerRunning) {
+            timerRunning = false
+            MyCanvas.start = false
+            pauseTime = System.currentTimeMillis()
+            displayTimeText.stop()
+
+        } else {
+            if (MyCanvas.startTime == 0L) {
+                MyCanvas.startTime = System.currentTimeMillis()
+                displayTimeText.base = SystemClock.elapsedRealtime()
+                displayTimeText.start()
+            } else {
+                displayTimeText.base =
+                    SystemClock.elapsedRealtime() - (MyCanvas.currentTime - MyCanvas.startTime)
+                displayTimeText.start()
+                MyCanvas.startTime += System.currentTimeMillis() - pauseTime
+            }
+            timerRunning = true
+            MyCanvas.start = true
+        }
+    }
+
 }
