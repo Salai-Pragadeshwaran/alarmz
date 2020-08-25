@@ -10,7 +10,7 @@ import androidx.annotation.Nullable;
 
 import com.example.alarmz.R;
 
-public class MyCanvas extends View {
+public class ClockCanvas extends View {
 
     public static Boolean start = false;
     public static long startTime = 0;
@@ -26,23 +26,23 @@ public class MyCanvas extends View {
     Paint linePaint3 = new Paint();
     Paint whitePaint1 = new Paint();
 
-    public MyCanvas(Context context) {
+    public ClockCanvas(Context context) {
         super(context);
 
         init(null);
     }
 
-    public MyCanvas(Context context, @Nullable AttributeSet attrs) {
+    public ClockCanvas(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         init(attrs);
     }
 
-    public MyCanvas(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ClockCanvas(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init(attrs);
     }
 
-    public MyCanvas(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public ClockCanvas(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init(attrs);
     }

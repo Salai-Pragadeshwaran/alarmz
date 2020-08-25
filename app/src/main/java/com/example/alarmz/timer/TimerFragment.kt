@@ -5,56 +5,180 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
 import com.example.alarmz.R
+import java.lang.String
+import java.util.concurrent.TimeUnit
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [TimerFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class TimerFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
+    companion object {
+        fun newInstance() = TimerFragment()
+
+        @JvmStatic
+        lateinit var displayTimeText: TextView
+
+        @JvmStatic
+        var timerRunning = false
     }
+
+    lateinit var startTimerButton: Button
+    lateinit var resetTimerButton: Button
+    var pauseTime = 0L
+    var paused = true
+    var timeThread = TimerThread()
+    lateinit var hours: EditText
+    lateinit var minutes: EditText
+    lateinit var seconds: EditText
+    lateinit var timeSetInfo: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_timer, container, false)
-    }
+        var root = inflater.inflate(R.layout.fragment_timer, container, false)
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment TimerFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            TimerFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+        startTimerButton = root.findViewById(R.id.startTimerT)
+        resetTimerButton = root.findViewById(R.id.resetTimerT)
+        displayTimeText = root.findViewById(R.id.timeDisplayT)
+
+        hours = root.findViewById(R.id.timerHours)
+        minutes = root.findViewById(R.id.timerMinutes)
+        seconds = root.findViewById(R.id.timerSeconds)
+        timeSetInfo = root.findViewById(R.id.timerSetTo)
+
+        startTimerButton.setOnClickListener {
+            if (timerRunning) {
+                startTimerButton.text = "Resume"
+                StartTimer()
+            } else {
+                var h = if (hours.text.toString() != "") {
+                    hours.text.toString().toLong()
+                } else 0L
+
+                var m = if (minutes.text.toString() != "") {
+                    minutes.text.toString().toLong()
+                } else 0L
+
+                var s = if (seconds.text.toString() != "") {
+                    seconds.text.toString().toLong()
+                } else 0L
+
+                if ((m < 60) && (m >= 0) && (s < 60) && (s >= 0)) {
+                    if(displayTimeText.text=="00:00:00") {
+                        if (!((h == 0L) && (m == 0L) && (s == 0L))) {
+                            timeSetInfo.text = "Timer set for $h hours $m minutes and $s seconds"
+                        }
+                        TimerCanvas.timerDuration =
+                            (s * 1000) + (m * 1000 * 60) + (h * 60 * 1000 * 60)
+                    }
+                    startTimerButton.text = "Pause"
+                    StartTimer()
+                } else {
+                    Toast.makeText(root.context, "Enter valid time duration", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+
+        resetTimerButton.setOnClickListener {
+            ResetTimer()
+        }
+
+        return root
+    }
+
+    private fun ResetTimer() {
+        timerRunning = false
+        TimerCanvas.start = false
+        TimerCanvas.secondX = 0F
+        TimerCanvas.secondY = -160F
+        TimerCanvas.minuteX = 0F
+        TimerCanvas.minuteY = -30F
+        TimerCanvas.startTime = 0
+        pauseTime = 0
+        stopThread()
+        displayTimeText.text = "00:00:00"
+        startTimerButton.text = "Start"
+    }
+
+    private fun StartTimer() {
+        if (timerRunning) {
+            stopThread()
+            timerRunning = false
+            TimerCanvas.start = false
+            pauseTime = System.currentTimeMillis()
+
+        } else {
+            startThread()
+            if (TimerCanvas.startTime == 0L) {
+                TimerCanvas.startTime = System.currentTimeMillis()
+            } else {
+                TimerCanvas.startTime += System.currentTimeMillis() - pauseTime
+            }
+            timerRunning = true
+            TimerCanvas.start = true
+        }
+    }
+
+    private fun startThread() {
+        paused = false
+        if (!timeThread.isAlive) {
+            timeThread.start()
+        }
+    }
+
+    private fun stopThread() {
+        paused = true
+    }
+
+    inner class TimerThread() : Thread() {
+        override fun run() {
+            while (true) {
+                try {
+                    sleep(10)
+                    activity!!.runOnUiThread(
+                        object : Runnable {
+                            override fun run() {
+                                if (!paused) {
+                                    displayTimeText.text =
+                                        returnFormattedTimeString(
+                                            TimerCanvas.timerDuration -
+                                                    System.currentTimeMillis() + TimerCanvas.startTime
+                                        )
+                                }
+                                if ((TimerCanvas.timerDuration -
+                                            System.currentTimeMillis() + TimerCanvas.startTime) <= 0
+                                ) {
+                                    ResetTimer()
+                                }
+                            }
+                        }
+                    )
+
+                } catch (e: InterruptedException) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        private fun returnFormattedTimeString(l: Long): kotlin.String {
+            var hr = TimeUnit.MILLISECONDS.toHours(l)
+            var min = TimeUnit.MILLISECONDS.toMinutes(l - TimeUnit.HOURS.toMillis(hr))
+            var sec = TimeUnit.MILLISECONDS.toSeconds(
+                l - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min)
+            )
+            var ms = TimeUnit.MILLISECONDS.toMillis(
+                l - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min) - TimeUnit.SECONDS.toMillis(
+                    sec
+                )
+            )
+            ms /= 10
+            return String.format("%02d:%02d.%02d", min, sec, ms)
+        }
+
     }
 }

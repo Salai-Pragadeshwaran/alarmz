@@ -11,7 +11,7 @@
         android:layout_height="match_parent"
         android:background="@android:color/background_light">
 
-        <com.example.alarmz.stopwatch.MyCanvas
+        <com.example.alarmz.stopwatch.ClockCanvas
             android:id="@+id/myDrawView"
             android:layout_width="170dp"
             android:layout_height="170dp"
@@ -73,7 +73,7 @@
             app:layout_constraintStart_toEndOf="@+id/myDrawView"
             app:layout_constraintTop_toTopOf="@+id/myDrawView">
 
-            <Chronometer
+            <TextView
                 android:id="@+id/timeDisplay"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

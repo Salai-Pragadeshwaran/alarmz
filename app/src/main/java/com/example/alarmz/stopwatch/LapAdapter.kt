@@ -57,16 +57,16 @@ class LapAdapter(var laps: ArrayList<Lap>) : RecyclerView.Adapter<LapAdapter.Vie
     }
 
     private fun returnFormattedTimeString(l: Long): kotlin.String {
-        var hr = TimeUnit.MILLISECONDS.toHours(l);
-        var min = TimeUnit.MILLISECONDS.toMinutes(l - TimeUnit.HOURS.toMillis(hr));
+        var hr = TimeUnit.MILLISECONDS.toHours(l)
+        var min = TimeUnit.MILLISECONDS.toMinutes(l - TimeUnit.HOURS.toMillis(hr))
         var sec = TimeUnit.MILLISECONDS.toSeconds(
             l - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min)
-        );
+        )
         var ms = TimeUnit.MILLISECONDS.toMillis(
             l - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min) - TimeUnit.SECONDS.toMillis(
                 sec
             )
-        );
+        )
         return String.format("%02d:%02d.%03d", min, sec, ms)
     }
 
